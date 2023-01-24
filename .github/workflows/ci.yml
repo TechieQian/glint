@@ -7,6 +7,7 @@ on:
     # filtering branches here prevents duplicate builds from pull_request and push
     branches:
       - main
+      - '*'
     # always run CI for tags
     tags:
       - '*'
@@ -103,9 +104,19 @@ jobs:
         with:
           run: yarn test
 
-  test-ts-nightly:
-    name: Test TypeScript Nightly
+  test-peer-versions:
+    name: Test Peer Versions
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        peers:
+          - set: "TS Nightly"
+            resolutions:
+              typescript: next
+          - set: "Minimum Versions"
+            resolutions:
+              typescript: "4.8.0"
+              ember-modifier: "3.2.7"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -122,8 +133,15 @@ jobs:
           key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
             ${{ runner.os }}-yarn-
+      - name: Set Resolutions
+        run: |
+          updated=$(jq '.resolutions |= . + ${{ toJSON(matrix.peers.resolutions) }}' package.json)
+          echo $updated > package.json
       - name: Install Dependencies
-        run: yarn add --dev -W typescript@next
+        env:
+          MIN_TS_VERSION: "4.8.0"
+          MIN_EMBER_MODIFIER_VERSION: ""
+        run: yarn add --dev -W typescript@4.8.0
       - name: Build
         run: yarn build
       - name: Run Tests

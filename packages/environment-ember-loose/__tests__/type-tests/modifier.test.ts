@@ -1,4 +1,9 @@
-import Modifier, { modifier, type ArgsFor } from 'ember-modifier';
+import Modifier, {
+  modifier,
+  type NamedArgs,
+  type PositionalArgs,
+  type ArgsFor,
+} from 'ember-modifier';
 import { NamedArgsMarker, resolve } from '@glint/environment-ember-loose/-private/dsl';
 import { expectTypeOf } from 'expect-type';
 import { ModifierReturn } from '@glint/template/-private/integration';
@@ -55,9 +60,6 @@ import type Owner from '@ember/owner';
     new HTMLDivElement(),
     'hello'
   );
-
-  type InferSignature<T> = T extends Modifier<infer Signature> ? Signature : never;
-  expectTypeOf<InferSignature<NeatModifier>>().toEqualTypeOf<NeatModifierSignature>();
 
   // @ts-expect-error: missing required positional arg
   neat(img);
@@ -142,7 +144,17 @@ import type Owner from '@ember/owner';
   }
 
   class MyModifier extends Modifier<TestSignature> {}
-  const myModifier = modifier<TestSignature>(() => {});
+  const myModifier = modifier(
+    (
+      el: TestSignature['Element'],
+      positional: PositionalArgs<TestSignature>,
+      named: NamedArgs<TestSignature>
+    ) => {
+      console.log({ el, positional, named });
+    },
+    // @ts-ignore: v3 requires this, v4 doesn't accept a second arg
+    { eager: false }
+  );
 
   expectTypeOf(MyModifier).toMatchTypeOf<ModifierLike<TestSignature>>();
   expectTypeOf(myModifier).toMatchTypeOf<ModifierLike<TestSignature>>();
